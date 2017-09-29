@@ -1,5 +1,8 @@
 class User < ApplicationRecord
 
+
+  attr_accessor :remember_token
+
   before_save { email.downcase!}
 
   VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
@@ -21,11 +24,37 @@ class User < ApplicationRecord
     presence: true,
     length: { minimum: 6 }
 
+
+  # The method BCrypt::Password.create uses salt to generate the hash,
+  # so each time User.digest('string') is called, a different hash is returned
+  # even if the same string is passed as argument.
+  # To compare a string with the hash, you should call something like this:
+  #   BCrypt::Password.new(string_hash).is_password?(plain_string)
+  # Compare string_hash with the return of User.digest(plain_string) using ==
+  # won't work
   def User.digest(string)
     cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
                                                    BCrypt::Engine.cost
     BCrypt::Password.create( string, cost: cost)
   end
 
+  def User.new_token
+    SecureRandom.urlsafe_base64
+  end
+
+  def remember
+    self.remember_token = User.new_token
+    update_attribute(:remember_digest , User.digest(self.remember_token))
+  end
+
+  # if try call BCrypt method passing a nil argument will raise a exception
+  def authenticated?(remember_token)
+    return false if remember_digest.nil?
+    BCrypt::Password.new(remember_digest).is_password?(remember_token)
+  end
+
+  def forget
+    update_attribute(:remember_digest , nil)
+  end
 
 end

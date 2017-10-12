@@ -49,7 +49,7 @@ class UsersLoginTest < ActionDispatch::IntegrationTest
 
   test "login withou remembering" do
     log_in_as @user , remember_me: '1'
-    #assert remember_token was deleted 
+    #assert remember_token was deleted
     log_in_as @user , remember_me: '0'
     assert_empty cookies['remember_token']
   end
